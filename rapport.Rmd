@@ -1,0 +1,181 @@
+---
+title: "Rapport - Statistiques"
+author: "ESPANA GUTIERREZ Pablo, MULOT Lendy"
+date: "08/03/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+  
+  
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("~/Cours/Stats/Projet1")
+library(knitr)
+library(dplyr)
+library(ggplot2)
+```
+
+&nbsp;
+
+&nbsp;
+
+### Introduction
+
+&nbsp;
+
+Nous avons choisi de nous intéresser aux données du gouvernement français sur les émissions de polluants des véhicules commercialisés en France en 2014 (cf. Bibliographie). Nous avons décidé pour mener nos expérience, de ne pas considérer les voitures de la marque Mercedes car elles étaient surreprésentés (87% des voitures de notre jeu de données) et pourraient donc introduire un biais. 
+
+&nbsp;
+
+```{r}
+t2014 <- read.csv("2014.csv", header=T, sep=";", dec=",")
+
+t <- t2014 %>%
+  filter(lib_mrq != "MERCEDES")
+
+head(t)
+length(t)
+```
+
+&nbsp;
+
+Sur cette thématique, nous allons chercher à répondre aux deux questions suivantes :
+
+* La masse d'une voiture est-elle corrélée à sa consommation ?
+* Peut-on considérer que les voitures de gammes luxueuses rejettent autant de $CO_2$ que les voitures de gamme inférieure ?
+
+&nbsp;
+
+&nbsp;
+
+### I) Corrélation entre la masse et la consommation d'une voiture
+
+&nbsp;
+
+Les données que nous utilisons nous donnent la possibilité de considérer plusieurs types de consommation : 
+
+* Urbaine
+* Extra urbaine
+* Mixte
+
+Cependant, nous nous sommes intéressés à la consommation extra urbaine, qui nous paraissait plus pertinente. 
+
+Nous cherchons donc à comparer deux séries de données quantitatives, donc nous avons utilisé un test de corrélation, ayant pour hypothèse $H_0$ que les deux séries sont décorrélées.
+
+&nbsp;
+
+
+```{r}
+cor.test(t$conso_exurb, t$masse_ordma_max)
+```
+
+&nbsp;
+
+On trouve une p-valeur inférieure à $2.2 \times 10^{-16}$, donc au risque $\alpha = 5\%$, nous pouvons rejeter l'hypothèse $H_0$.
+
+Nous pouvons ainsi conclure (au risque $\alpha = 5\%$) que la masse de la voiture est corrélée à sa consommation extra urbaine.
+
+De plus, on obtient un coefficient de corrélation de 0.74, ce qui nous induit à penser que le modèle linéaire n'est probablement pas le plus approprié.
+
+&nbsp;
+
+```{r, warning=FALSE}
+gg <- ggplot(t, aes(x=masse_ordma_max, y=conso_exurb)) + geom_point(aes(col=gamme)) +
+  geom_smooth(method="lm") +
+  labs(title="Corrélation entre la masse d'une voiture et sa consommation extra urbaine") +
+  xlab("Masse (kg)") + ylab("Consommation extra urbaine (l/100km)") 
+plot(gg)
+
+```
+
+&nbsp;
+
+Sur le graphique ci-dessus, on remarque que les voitures de gamme économique et inférieure semple consommer moins que celle de luxe, d'où la pertinence de la seconde question.
+
+&nbsp;
+
+### II) Comparaison du rejet de $CO_2$ pour différentes gammes
+
+&nbsp;
+
+À la vue du graphique ci-dessus, nous avons choisi de comparer les la gamme luxueuse à la gamme inférieure puisque c'est pour celles-ci que les différences semblent être les plus notables.
+
+&nbsp;
+
+```{r}
+tinf <- t %>%
+  filter(gamme == "INFERIEURE")
+
+tluxe <- t %>%
+  filter(gamme == "LUXE")
+
+t2 <- t %>% 
+  filter(gamme == "LUXE" | gamme == "INFERIEURE")
+
+head(t2)
+length(t2)
+```
+
+&nbsp;
+
+Nous cherchons donc à relier la gamme, une donnée qualitative, au rejet de $CO_2$, une donnée quantitative. Nous allons donc mener un test de comparaison de moyenne entre les données des deux gammes.
+
+Pour bien choisir le test, nous devons déjà vérifier si les données suivent une loi normale. Pour cela, nous avons utilisé un test de Shapire, ayant pour hypothèse $H_0$ que les données suivent une loi normale.
+
+```{r}
+shapiro.test(tinf$co2)
+shapiro.test(tluxe$co2)
+```
+
+&nbsp;
+
+Dans les deux cas, la p-valeur est inférieure à un risque $\alpha = 5\%$. On peut donc rejeter l'hypothèse de normalité.
+
+Nous allons ainsi mener un test non paramétrique de Wilcox, ayant pour hypothèse $H_0$ que les moyennes des deux séries peuvent être considées comme identique, c'est à dire que la différence peut s'expliquer simplement avec les fluctuations d'échantillonage.
+
+&nbsp;
+
+```{r}
+wilcox.test(tinf$co2, tluxe$co2)
+```
+
+&nbsp;
+
+On obtient ici aussi une p-valeure inférieure à $2.2 \times 10^{-16}$, donc pour un risque $\alpha = 5\%$ ont peut rejeter $H_0$.
+
+Nous pouvons donc conclure (au risque $\alpha = 5\%$) que les voitures de luxe et les voitures de gammes inférieures ne consomment en moyenne pas autant.
+
+&nbsp;
+
+```{r, warning=FALSE}
+gg <- ggplot(t2, aes(x=gamme, y=co2, fill=gamme, colour=gamme)) +
+  geom_boxplot(alpha=0.5, outlier.alpha=0, colour="black") +
+  geom_jitter(fill="black")  +
+  labs(title="Rejet de CO2 pour les véhicules de gamme inférieure et de gamme luxueuse") +
+  xlab("Gamme") + ylab("Rejet de C02 (g/km)")
+plot(gg)
+```
+
+&nbsp;
+
+À la vue de nos résultats et du graphique ci-dessus, nous pouvons extrapoler que les voitures de luxe consomment en moyenne plus que les voitures de gamme inférieure, malgrès une plus grande dispertion pour les voitures de luxe.
+
+&nbsp;
+
+### Conclusion
+
+&nbsp;
+
+Nous avons pu répondre à question de la corrélation entre masse et consommation à l'aide d'un test de corrélation, qui nous a révélé, au risque $\alpha = 5\%$, que ces deux paramètres sont effectivement corrélés.
+
+À l'aide d'un test de Wilcox et en extrapolant le graphique associé, nous avons aussi conclus que les voitures de gammes inférieurs consomment en moyenne moins que celles de gamme luxueuses.
+
+Il ne faut cepandant pas oublier que d'autres paramètres peuvent être en jeu, et que les lien ne sont pas nécéssairement des liens de cause à effet.
+
+&nbsp;
+
+### Bibliographie
+
+[Les données utilisées](https://www.data.gouv.fr/fr/datasets/emissions-de-co2-et-de-polluants-des-vehicules-commercialises-en-france/)
