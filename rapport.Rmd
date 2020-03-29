@@ -3,8 +3,8 @@ title: "Rapport - Statistiques"
 author: "ESPANA GUTIERREZ Pablo, MULOT Lendy"
 date: "08/03/2020"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
   
   
