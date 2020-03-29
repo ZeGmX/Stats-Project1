@@ -67,8 +67,8 @@ wilcox.test(tinf$co2, tluxe$co2)
 
 gg <- ggplot(t2, aes(x=gamme, y=co2, fill=gamme, colour=gamme)) +
   geom_boxplot(alpha=0.5, outlier.alpha=0, colour="black") +
-  geom_jitter(fill="black")  +
-  labs(title="Rejet de CO2 pour les véhicules de gamme inférieure et de gamme luxueuse") +
+  geom_jitter(fill="black", alpha = 0.1)  +
+  labs(title="Rejet de CO2 pour les véhicules de gamme\n inférieure et de gamme luxueuse") +
   xlab("Gamme") + ylab("Rejet de C02 (g/km)")
   
 plot(gg)
